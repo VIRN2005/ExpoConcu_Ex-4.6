@@ -56,5 +56,3 @@ void rwlock_wunlock(rwlock_t *lock) {
     pthread_cond_signal(&lock->write_cond);
     pthread_mutex_unlock(&lock->mutex);
 }
-
-//End

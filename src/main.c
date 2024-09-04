@@ -1,7 +1,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "list.h"
+
 
 // Insert function
 void *insert_func(void *arg) {
