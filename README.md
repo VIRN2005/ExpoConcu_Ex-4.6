@@ -1,4 +1,4 @@
-# Léeme
+# README
 ================
 
 Este programa es una implementación multihilo de una lista enlazada con un cerrojo de lectura-escritura. El programa permite que varios hilos accedan a la lista enlazada simultáneamente, con lectores que pueden acceder a la lista concurrentemente mientras que los escritores tienen acceso exclusivo a la lista.
