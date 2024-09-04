@@ -15,12 +15,10 @@ void rwlock_init(rwlock_t *lock) {
 // Reader lock
 void rwlock_rlock(rwlock_t *lock) {
     pthread_mutex_lock(&lock->mutex);
-    printf("Thread %ld requesting read lock...\n", pthread_self());
     while (lock->writers > 0) {
         pthread_cond_wait(&lock->read_cond, &lock->mutex);
     }
     lock->readers++;
-    printf("Thread %ld read lock granted.\n", pthread_self());
     pthread_mutex_unlock(&lock->mutex);
 }
 
@@ -37,12 +35,10 @@ void rwlock_runlock(rwlock_t *lock) {
 // Writer lock
 void rwlock_wlock(rwlock_t *lock) {
     pthread_mutex_lock(&lock->mutex);
-    printf("Thread %ld requesting write lock...\n", pthread_self());
     while (lock->readers > 0 || lock->writers > 0) {
         pthread_cond_wait(&lock->write_cond, &lock->mutex);
     }
     lock->writers++;
-    printf("Thread %ld write lock granted.\n", pthread_self());
     pthread_mutex_unlock(&lock->mutex);
 }
 

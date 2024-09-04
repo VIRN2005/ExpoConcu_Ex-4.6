@@ -1,82 +1,54 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "list.h"
+#include "rwlock.h"
 
-// Initialize the linked list
-void list_init(list_t *list) {
-    list->head = NULL;
-    rwlock_init(&list->lock);
+// Initialize the read-write lock
+void rwlock_init(rwlock_t *lock) {
+    pthread_mutex_init(&lock->mutex, NULL);
+    pthread_cond_init(&lock->read_cond, NULL);
+    pthread_cond_init(&lock->write_cond, NULL);
+    lock->readers = 0;
+    lock->writers = 0;
 }
 
-// Insert a node into the linked list
-void list_insert(list_t *list, int data) {
-    node_t *node = malloc(sizeof(node_t));
-    node->data = data;
-    node->next = NULL;
-
-    rwlock_wlock(&list->lock);
-    if (list->head == NULL) {
-        list->head = node;
-    } else {
-        node_t *current = list->head;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = node;
+// Reader lock
+void rwlock_rlock(rwlock_t *lock) {
+    pthread_mutex_lock(&lock->mutex);
+    while (lock->writers > 0) {
+        pthread_cond_wait(&lock->read_cond, &lock->mutex);
     }
-    printf("Hilo de inserción insertando nodo %d...\n", data);
-    list_print(list);
-    rwlock_wunlock(&list->lock);
+    lock->readers++;
+    pthread_mutex_unlock(&lock->mutex);
 }
 
-// Delete a node from the linked list
-void list_delete(list_t *list, int data) {
-    rwlock_wlock(&list->lock);
-    if (list->head == NULL) {
-        rwlock_wunlock(&list->lock);
-        return;
+// Reader unlock
+void rwlock_runlock(rwlock_t *lock) {
+    pthread_mutex_lock(&lock->mutex);
+    lock->readers--;
+    if (lock->readers == 0) {
+        pthread_cond_signal(&lock->write_cond);
     }
-
-    if (list->head->data == data) {
-        node_t *temp = list->head;
-        list->head = list->head->next;
-        free(temp);
-        printf("Hilo de eliminación eliminando nodo %d...\n", data);
-        list_print(list);
-        rwlock_wunlock(&list->lock);
-        return;
-    }
-
-    node_t *current = list->head;
-    while (current->next != NULL) {
-        if (current->next->data == data) {
-            node_t *temp = current->next;
-            current->next = current->next->next;
-            free(temp);
-            printf("Hilo de eliminación eliminando nodo %d...\n", data);
-            list_print(list);
-            rwlock_wunlock(&list->lock);
-            return;
-        }
-        current = current->next;
-    }
-
-    rwlock_wunlock(&list->lock);
+    pthread_mutex_unlock(&lock->mutex);
 }
 
-// Print the linked list
-void list_print(list_t *list) {
-    rwlock_rlock(&list->lock);
-    printf("Lista enlazada actualizada:\n");
-    node_t *current = list->head;
-    while (current != NULL) {
-        printf("-> Nodo %d\n", current->data);
-        current = current->next;
+// Writer lock
+void rwlock_wlock(rwlock_t *lock) {
+    pthread_mutex_lock(&lock->mutex);
+    while (lock->readers > 0 || lock->writers > 0) {
+        pthread_cond_wait(&lock->write_cond, &lock->mutex);
     }
-    if (list->head == NULL) {
-        printf("Lista vacía.\n");
+    lock->writers++;
+    pthread_mutex_unlock(&lock->mutex);
+}
+
+// Writer unlock
+void rwlock_wunlock(rwlock_t *lock) {
+    pthread_mutex_lock(&lock->mutex);
+    lock->writers--;
+    if (lock->writers == 0) {
+        pthread_cond_broadcast(&lock->read_cond);
     }
-    printf("\n");
-    rwlock_runlock(&list->lock);
+    pthread_cond_signal(&lock->write_cond);
+    pthread_mutex_unlock(&lock->mutex);
 }

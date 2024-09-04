@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "list.h"
 
-
 // Insert function
 void *insert_func(void *arg) {
     list_t *list = (list_t *)arg;
