@@ -1,17 +1,19 @@
 #ifndef RWLOCK_H
 #define RWLOCK_H
 
-typedef struct RWLock {
-    int readers;
-    int writers;
+#include <pthread.h>
+
+// Read-Write Lock structure
+typedef struct {
     pthread_mutex_t mutex;
-    pthread_cond_t cond;
-} RWLock;
+    pthread_cond_t read_cond, write_cond;
+    int readers, writers;
+} rwlock_t;
 
-void rwlock_init(RWLock* lock);
-void rwlock_read_lock(RWLock* lock);
-void rwlock_read_unlock(RWLock* lock);
-void rwlock_write_lock(RWLock* lock);
-void rwlock_write_unlock(RWLock* lock);
+void rwlock_init(rwlock_t *lock);
+void rwlock_rlock(rwlock_t *lock);
+void rwlock_runlock(rwlock_t *lock);
+void rwlock_wlock(rwlock_t *lock);
+void rwlock_wunlock(rwlock_t *lock);
 
-#endif  // RWLOCK_H
+#endif // RWLOCK_H

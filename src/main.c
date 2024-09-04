@@ -1,49 +1,38 @@
-#include "list.h"
-#include "rwlock.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "list.h"
 
-List list;
-RWLock lock;
-
-void* insert_thread(void* arg) {
-    int i;
-    for (i = 0; i < 5; i++) {
-        rwlock_write_lock(&lock);
-        list_insert(&list, i);
-        printf("Hilo de inserción insertando nodo %d...\n", i);
-        list_print(&list);
-        rwlock_write_unlock(&lock);
+// Insert function
+void *insert_func(void *arg) {
+    list_t *list = (list_t *)arg;
+    for (int i = 0; i < 10; i++) {
+        list_insert(list, i);
+        sleep(1);  // Delay to simulate real-time processing
     }
     return NULL;
 }
 
-void* delete_thread(void* arg) {
-    int i;
-    for (i = 0; i < 5; i++) {
-        rwlock_write_lock(&lock);
-        list_delete(&list, i);
-        printf("Hilo de eliminación eliminando nodo %d...\n", i);
-        list_print(&list);
-        rwlock_write_unlock(&lock);
+// Delete function
+void *delete_func(void *arg) {
+    list_t *list = (list_t *)arg;
+    for (int i = 0; i < 10; i++) {
+        list_delete(list, i);
+        sleep(1);  // Delay to simulate real-time processing
     }
     return NULL;
 }
 
 int main() {
+    list_t list;
     list_init(&list);
-    rwlock_init(&lock);
 
-    pthread_t insert_tid, delete_tid;
-    pthread_create(&insert_tid, NULL, insert_thread, NULL);
-    pthread_create(&delete_tid, NULL, delete_thread, NULL);
+    pthread_t thread1, thread2;
+    pthread_create(&thread1, NULL, insert_func, &list);
+    pthread_create(&thread2, NULL, delete_func, &list);
 
-    pthread_join(insert_tid, NULL);
-    pthread_join(delete_tid, NULL);
-
-    list_print(&list);
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
 
     return 0;
 }
-   

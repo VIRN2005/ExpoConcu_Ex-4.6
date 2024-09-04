@@ -1,44 +1,82 @@
-#include "list.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "list.h"
 
-void list_init(List* list) {
+// Initialize the linked list
+void list_init(list_t *list) {
     list->head = NULL;
+    rwlock_init(&list->lock);
 }
 
-void list_insert(List* list, int data) {
-    Node* node = (Node*)malloc(sizeof(Node));
+// Insert a node into the linked list
+void list_insert(list_t *list, int data) {
+    node_t *node = malloc(sizeof(node_t));
     node->data = data;
-    node->next = list->head;
-    list->head = node;
-}
+    node->next = NULL;
 
-void list_delete(List* list, int data) {
-    Node* current = list->head;
-    Node* previous = NULL;
-
-    while (current != NULL && current->data != data) {
-        previous = current;
-        current = current->next;
-    }
-
-    if (current != NULL) {
-        if (previous == NULL) {
-            list->head = current->next;
-        } else {
-            previous->next = current->next;
+    rwlock_wlock(&list->lock);
+    if (list->head == NULL) {
+        list->head = node;
+    } else {
+        node_t *current = list->head;
+        while (current->next != NULL) {
+            current = current->next;
         }
-        free(current);
+        current->next = node;
     }
+    printf("Hilo de inserción insertando nodo %d...\n", data);
+    list_print(list);
+    rwlock_wunlock(&list->lock);
 }
 
-void list_print(List* list) {
-    Node* current = list->head;
+// Delete a node from the linked list
+void list_delete(list_t *list, int data) {
+    rwlock_wlock(&list->lock);
+    if (list->head == NULL) {
+        rwlock_wunlock(&list->lock);
+        return;
+    }
 
-    printf("Lista enlazada: ");
-    while (current != NULL) {
-        printf("%d -> ", current->data);
+    if (list->head->data == data) {
+        node_t *temp = list->head;
+        list->head = list->head->next;
+        free(temp);
+        printf("Hilo de eliminación eliminando nodo %d...\n", data);
+        list_print(list);
+        rwlock_wunlock(&list->lock);
+        return;
+    }
+
+    node_t *current = list->head;
+    while (current->next != NULL) {
+        if (current->next->data == data) {
+            node_t *temp = current->next;
+            current->next = current->next->next;
+            free(temp);
+            printf("Hilo de eliminación eliminando nodo %d...\n", data);
+            list_print(list);
+            rwlock_wunlock(&list->lock);
+            return;
+        }
         current = current->next;
     }
-    printf("NULL\n");
+
+    rwlock_wunlock(&list->lock);
+}
+
+// Print the linked list
+void list_print(list_t *list) {
+    rwlock_rlock(&list->lock);
+    printf("Lista enlazada actualizada:\n");
+    node_t *current = list->head;
+    while (current != NULL) {
+        printf("-> Nodo %d\n", current->data);
+        current = current->next;
+    }
+    if (list->head == NULL) {
+        printf("Lista vacía.\n");
+    }
+    printf("\n");
+    rwlock_runlock(&list->lock);
 }
