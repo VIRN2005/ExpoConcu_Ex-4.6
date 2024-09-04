@@ -1,20 +1,21 @@
 CC = gcc
 CFLAGS = -Wall -pthread
 OBJ = main.o list.o rwlock.o
+EXEC = main
 
-all: main
+all: $(EXEC)
 
-main: $(OBJ)
-	$(CC) -o main $(OBJ) $(CFLAGS)
+$(EXEC): $(OBJ)
+	$(CC) $(CFLAGS) -o $(EXEC) $(OBJ)
 
 main.o: src/main.c src/list.h src/rwlock.h
-	$(CC) -c src/main.c $(CFLAGS)
+	$(CC) $(CFLAGS) -c src/main.c
 
 list.o: src/list.c src/list.h src/rwlock.h
-	$(CC) -c src/list.c $(CFLAGS)
+	$(CC) $(CFLAGS) -c src/list.c
 
 rwlock.o: src/rwlock.c src/rwlock.h
-	$(CC) -c src/rwlock.c $(CFLAGS)
+	$(CC) $(CFLAGS) -c src/rwlock.c
 
 clean:
-	rm -f *.o main
+	rm -f $(OBJ) $(EXEC)
