@@ -2,66 +2,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void list_init(list_t *list) {
+void list_init(List* list) {
     list->head = NULL;
-    rwlock_init(&list->lock);
 }
 
-void list_insert(list_t *list, int data) {
-    node_t *node = malloc(sizeof(node_t));
+void list_insert(List* list, int data) {
+    Node* node = (Node*)malloc(sizeof(Node));
     node->data = data;
-    node->next = NULL;
-
-    rwlock_wlock(&list->lock);
-    if (list->head == NULL) {
-        list->head = node;
-    } else {
-        node_t *current = list->head;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = node;
-    }
-    rwlock_wunlock(&list->lock);
+    node->next = list->head;
+    list->head = node;
 }
 
-void list_delete(list_t *list, int data) {
-    rwlock_wlock(&list->lock);
-    if (list->head == NULL) {
-        rwlock_wunlock(&list->lock);
-        return;
-    }
+void list_delete(List* list, int data) {
+    Node* current = list->head;
+    Node* previous = NULL;
 
-    if (list->head->data == data) {
-        node_t *temp = list->head;
-        list->head = list->head->next;
-        free(temp);
-        rwlock_wunlock(&list->lock);
-        return;
-    }
-
-    node_t *current = list->head;
-    while (current->next != NULL) {
-        if (current->next->data == data) {
-            node_t *temp = current->next;
-            current->next = current->next->next;
-            free(temp);
-            rwlock_wunlock(&list->lock);
-            return;
-        }
+    while (current != NULL && current->data != data) {
+        previous = current;
         current = current->next;
     }
 
-    rwlock_wunlock(&list->lock);
+    if (current != NULL) {
+        if (previous == NULL) {
+            list->head = current->next;
+        } else {
+            previous->next = current->next;
+        }
+        free(current);
+    }
 }
 
-void list_print(list_t *list) {
-    rwlock_rlock(&list->lock);
-    node_t *current = list->head;
+void list_print(List* list) {
+    Node* current = list->head;
+
+    printf("Lista enlazada: ");
     while (current != NULL) {
-        printf("%d ", current->data);
+        printf("%d -> ", current->data);
         current = current->next;
     }
-    printf("\n");
-    rwlock_runlock(&list->lock);
+    printf("NULL\n");
 }

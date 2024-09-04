@@ -1,23 +1,18 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "rwlock.h"
-
-// Node structure
-typedef struct node {
+typedef struct Node {
     int data;
-    struct node *next;
-} node_t;
+    struct Node* next;
+} Node;
 
-// Linked list structure
-typedef struct {
-    node_t *head;
-    rwlock_t lock;
-} list_t;
+typedef struct List {
+    Node* head;
+} List;
 
-void list_init(list_t *list);
-void list_insert(list_t *list, int data);
-void list_delete(list_t *list, int data);
-void list_print(list_t *list);
+void list_init(List* list);
+void list_insert(List* list, int data);
+void list_delete(List* list, int data);
+void list_print(List* list);
 
-#endif // LIST_H
+#endif  // LIST_H
