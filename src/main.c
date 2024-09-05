@@ -16,13 +16,15 @@ void *insert_func(void *arg) {
 
 // Delete function
 void *delete_func(void *arg) {
+    sleep(2);  // Esperar a que el hilo de inserción avance
     list_t *list = (list_t *)arg;
     for (int i = 0; i < 10; i++) {
         list_delete(list, i);
-        sleep(1);  // Delay to simulate real-time processing
+        sleep(1);  // Simular procesamiento en tiempo real
     }
     return NULL;
 }
+
 
 int main() {
     list_t list;

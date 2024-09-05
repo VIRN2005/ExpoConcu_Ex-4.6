@@ -1,54 +1,69 @@
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "rwlock.h"
+#include "list.h"
 
-// Initialize the read-write lock
-void rwlock_init(rwlock_t *lock) {
-    pthread_mutex_init(&lock->mutex, NULL);
-    pthread_cond_init(&lock->read_cond, NULL);
-    pthread_cond_init(&lock->write_cond, NULL);
-    lock->readers = 0;
-    lock->writers = 0;
+// Initialize the list
+void list_init(list_t *list) {
+    list->head = NULL;
+    rwlock_init(&list->lock);
 }
 
-// Reader lock
-void rwlock_rlock(rwlock_t *lock) {
-    pthread_mutex_lock(&lock->mutex);
-    while (lock->writers > 0) {
-        pthread_cond_wait(&lock->read_cond, &lock->mutex);
+// Insert a new element at the beginning of the list
+void list_insert(list_t *list, int data) {
+    rwlock_wlock(&list->lock);  // Bloqueo de escritura
+    node_t *new_node = malloc(sizeof(node_t));
+    if (new_node == NULL) {
+        perror("Failed to allocate memory for new node");
+        rwlock_wunlock(&list->lock);  // Liberar el bloqueo si hay fallo
+        return;
     }
-    lock->readers++;
-    pthread_mutex_unlock(&lock->mutex);
+    new_node->data = data;
+    new_node->next = list->head;
+    list->head = new_node;
+    
+    printf("Inserting: %d\n", data);  // Imprimir el número insertado
+
+    rwlock_wunlock(&list->lock);  // Liberar el bloqueo de escritura
 }
 
-// Reader unlock
-void rwlock_runlock(rwlock_t *lock) {
-    pthread_mutex_lock(&lock->mutex);
-    lock->readers--;
-    if (lock->readers == 0) {
-        pthread_cond_signal(&lock->write_cond);
+// Delete the first occurrence of an element in the list
+void list_delete(list_t *list, int data) {
+    rwlock_wlock(&list->lock);  // Bloqueo de escritura
+    node_t *current = list->head;
+    node_t *prev = NULL;
+
+    while (current != NULL) {
+        if (current->data == data) {
+            if (prev == NULL) {
+                list->head = current->next;  // Eliminar el nodo si es la cabeza
+            } else {
+                prev->next = current->next;
+            }
+            free(current);
+            printf("Deleting: %d\n", data);  // Imprimir el número eliminado
+            rwlock_wunlock(&list->lock);  // Liberar el bloqueo de escritura
+            return;
+        }
+        prev = current;
+        current = current->next;
     }
-    pthread_mutex_unlock(&lock->mutex);
+
+    // Si no se encuentra el dato
+    printf("Data %d not found\n", data);
+
+    rwlock_wunlock(&list->lock);  // Liberar el bloqueo de escritura
 }
 
-// Writer lock
-void rwlock_wlock(rwlock_t *lock) {
-    pthread_mutex_lock(&lock->mutex);
-    while (lock->readers > 0 || lock->writers > 0) {
-        pthread_cond_wait(&lock->write_cond, &lock->mutex);
+// Print the list elements
+void list_print(list_t *list) {
+    rwlock_rlock(&list->lock);
+    
+    node_t *current = list->head;
+    while (current != NULL) {
+        printf("%d -> ", current->data);
+        current = current->next;
     }
-    lock->writers++;
-    pthread_mutex_unlock(&lock->mutex);
-}
+    printf("NULL\n");
 
-// Writer unlock
-void rwlock_wunlock(rwlock_t *lock) {
-    pthread_mutex_lock(&lock->mutex);
-    lock->writers--;
-    if (lock->writers == 0) {
-        pthread_cond_broadcast(&lock->read_cond);
-    }
-    pthread_cond_signal(&lock->write_cond);
-    pthread_mutex_unlock(&lock->mutex);
+    rwlock_runlock(&list->lock);
 }
