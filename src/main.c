@@ -9,18 +9,18 @@ void *insert_func(void *arg) {
     list_t *list = (list_t *)arg;
     for (int i = 0; i < 10; i++) {
         list_insert(list, i);
-        sleep(1);  // Delay to simulate real-time processing
+        sleep(1); 
     }
     return NULL;
 }
 
 // Delete function
 void *delete_func(void *arg) {
-    sleep(2);  // Esperar a que el hilo de inserción avance
+    sleep(1);  
     list_t *list = (list_t *)arg;
     for (int i = 0; i < 10; i++) {
         list_delete(list, i);
-        sleep(1);  // Simular procesamiento en tiempo real
+        sleep(1); 
     }
     return NULL;
 }
